@@ -49,7 +49,7 @@ class ValueWidget(QWidget):
         self.ui_name = QLabel()
         self.ui_name.setText(self.name)
 
-        match type(value).__name__:
+        match type(self.value).__name__:
             case "int":
                 self.ui_value = QSpinBox()
                 self.ui_value.setMaximum(65535)
@@ -59,14 +59,15 @@ class ValueWidget(QWidget):
                 self.ui_value.setMaximum(9999.99)
                 self.ui_value.setMinimum(-9999.99)
                 self.ui_value.setValue(self.value)
+                if math.isnan(self.value):
+                    disabled = True
             case "bool":
                 self.ui_value = QCheckBox()
                 self.ui_value.setChecked(self.value)
             case _:
                 self.ui_value = QSpinBox()
                 self.ui_value.setValue(0)
-                self.ui_value.setReadOnly(True)
-                self.ui_value.setEnabled(False)
+                disabled = True
 
         if disabled:
             self.ui_value.setReadOnly(True)
@@ -82,6 +83,7 @@ class ValueWidget(QWidget):
             case "bool":
                 self.ui_value.toggled.connect(self.update_value)
             case _:
+                self.ui_value.setFixedSize(QSize(75, 22))
                 self.ui_value.valueChanged.connect(self.update_value)
 
     def update_value(self, value):
