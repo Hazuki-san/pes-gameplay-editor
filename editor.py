@@ -1,12 +1,24 @@
+import importlib
+import io
 import math
 import os
 import struct
 import sys
 
-from PySide6.QtCore import *
-from PySide6.QtWidgets import *
+from PySide6.QtCore import QSize
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QDoubleSpinBox,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QListWidgetItem,
+    QMainWindow,
+    QSpinBox,
+    QWidget,
+)
 
-from pes_ai.eighteen.team import *
 from pes_ai.ui import Ui_Editor
 from pes_ai.utils import conv_to_bytes
 
@@ -81,6 +93,7 @@ class Editor(QMainWindow, Ui_Editor):
 
         self.buffer: io.BytesIO | None = None
         self.filename: str = ""
+        self.module = None
         self.head_len: int = 0
         self.idx_len: int = 0
         self.subsections: dict = {}
@@ -121,6 +134,7 @@ class Editor(QMainWindow, Ui_Editor):
     def load_18_bin(self):
         self.get_filename()
         if "constant_team" in self.filename:
+            self.module = importlib.import_module("pes_ai.eighteen.team")
             self.head_len = 200
             self.idx_len = 218
         if self.head_len != 0 and self.idx_len != 0:
@@ -156,12 +170,11 @@ class Editor(QMainWindow, Ui_Editor):
             self.save_changed_value(prev)
         self.ValueList.clear()
         try:
-            vals = globals()[f"map_{curr.text()[:-2]}"](
-                self.buffer, curr.offset, curr.length
-            )
+            func = getattr(self.module, f"map_{curr.text()[:-2]}")
+            vals = func(self.buffer, curr.offset, curr.length)
             for k, v in vals.items():
                 self.add_value_widget(k, v)
-        except KeyError:
+        except AttributeError:
             self.add_value_widget(str(curr.length), curr.offset, True)
 
 
