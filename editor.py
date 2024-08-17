@@ -97,6 +97,8 @@ class Editor(QMainWindow):
         self.resize(1280, 720)
         self.setMinimumSize(QSize(1280, 720))
         self.setMaximumSize(QSize(1280, 720))
+        self.act_load_17 = QAction()
+        self.act_load_17.setObjectName("act_load_17")
         self.act_load_18 = QAction()
         self.act_load_18.setObjectName("act_load_18")
         self.act_save = QAction()
@@ -131,6 +133,7 @@ class Editor(QMainWindow):
 
         self.menu_bar.addAction(self.menu_load.menuAction())
         self.menu_bar.addAction(self.menu_save.menuAction())
+        self.menu_load.addAction(self.act_load_17)
         self.menu_load.addAction(self.act_load_18)
         self.menu_save.addAction(self.act_save)
         self.menu_save.addAction(self.act_save_as)
@@ -139,6 +142,7 @@ class Editor(QMainWindow):
 
         QMetaObject.connectSlotsByName(self)
 
+        self.act_load_17.triggered.connect(self.load_17_bin)
         self.act_load_18.triggered.connect(self.load_18_bin)
         self.act_save.triggered.connect(self.save_bin)
         self.section_list.currentItemChanged.connect(self.load_section)
@@ -153,6 +157,8 @@ class Editor(QMainWindow):
     def re_translate_ui(self):
         window_title = QCoreApplication.translate("Editor", "PES Gameplay Editor", None)
         self.setWindowTitle(window_title)
+        load_17_text = QCoreApplication.translate("Editor", "Load 17 files", None)
+        self.act_load_17.setText(load_17_text)
         load_18_text = QCoreApplication.translate("Editor", "Load 18 files", None)
         self.act_load_18.setText(load_18_text)
         save_text = QCoreApplication.translate("Editor", "Save", None)
@@ -195,6 +201,15 @@ class Editor(QMainWindow):
                 item = SectionItem(offset=v["offset"], length=v["length"])
                 item.setText(k)
                 self.section_list.addItem(item)
+
+    def load_17_bin(self):
+        self.get_filename()
+        if "constant_team" in self.filename:
+            self.module = importlib.import_module("pes_ai.seventeen.team")
+            self.head_len = 200
+            self.idx_len = 218
+        if self.head_len != 0 and self.idx_len != 0:
+            self.load_bin()
 
     def load_18_bin(self):
         self.get_filename()
