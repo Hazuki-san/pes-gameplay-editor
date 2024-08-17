@@ -1,0 +1,6 @@
+.idea/
+.ruff_cache/
+__pycache__/
+venv/
+*.ui
+*.bin
