@@ -12,10 +12,9 @@ def map_basePosition(
     for i in range(int(length / 4)):
         match i:
             case 64 | 75:
-                for _ in range(3):
-                    vals.append(unpack("?", data.read(1))[0])
+                vals += list(unpack("3?", data.read(3)))
                 data.seek(data.tell() + 1)
-                vals.append(None)
+                vals += [None]
             case _:
                 vals.append(conv_from_bytes(data.read(4)))
 

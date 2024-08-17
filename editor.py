@@ -100,7 +100,7 @@ class Editor(QMainWindow):
         self.act_save = QAction()
         self.act_save.setObjectName("act_save")
         self.act_save_as = QAction()
-        self.act_save_as.setObjectName("act_save_As")
+        self.act_save_as.setObjectName("act_save_as")
         self.central_widget = QWidget()
         self.central_widget.setObjectName("central_widget")
         self.section_list = QListWidget(self.central_widget)
