@@ -5,21 +5,27 @@ import os
 import struct
 import sys
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QCoreApplication, QMetaObject, QRect, QSize, Qt
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QApplication,
     QCheckBox,
+    QComboBox,
     QDoubleSpinBox,
     QFileDialog,
     QHBoxLayout,
     QLabel,
+    QListView,
+    QListWidget,
     QListWidgetItem,
     QMainWindow,
+    QMenu,
+    QMenuBar,
     QSpinBox,
     QWidget,
 )
 
-from pes_ai.ui import Ui_Editor
 from pes_ai.utils import conv_to_bytes
 
 
@@ -82,14 +88,58 @@ class ValueWidget(QWidget):
         self.value = value
 
 
-class Editor(QMainWindow, Ui_Editor):
+class Editor(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setupUi(self)
+        self.setObjectName("Editor")
+        self.resize(1280, 720)
+        self.setMinimumSize(QSize(1280, 720))
+        self.setMaximumSize(QSize(1280, 720))
+        self.act_load_18 = QAction()
+        self.act_load_18.setObjectName("act_load_18")
+        self.act_save = QAction()
+        self.act_save.setObjectName("act_save")
+        self.act_save_as = QAction()
+        self.act_save_as.setObjectName("act_save_As")
+        self.central_widget = QWidget()
+        self.central_widget.setObjectName("central_widget")
+        self.section_list = QListWidget(self.central_widget)
+        self.section_list.setObjectName("section_list")
+        self.section_list.setGeometry(QRect(10, 45, 200, 640))
+        self.value_list = QListWidget(self.central_widget)
+        self.value_list.setObjectName("value_list")
+        self.value_list.setGeometry(QRect(220, 10, 1050, 675))
+        self.value_list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.value_list.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        self.value_list.setFlow(QListView.Flow.LeftToRight)
+        self.value_list.setProperty("isWrapping", True)
+        self.value_list.setGridSize(QSize(512, 64))
+        self.file_list = QComboBox(self.central_widget)
+        self.file_list.setObjectName("file_list")
+        self.file_list.setGeometry(QRect(10, 10, 200, 25))
+        self.setCentralWidget(self.central_widget)
+        self.menu_bar = QMenuBar()
+        self.menu_bar.setObjectName("menu_bar")
+        self.menu_bar.setGeometry(QRect(0, 0, 1280, 22))
+        self.menu_load = QMenu(self.menu_bar)
+        self.menu_load.setObjectName("menu_load")
+        self.menu_save = QMenu(self.menu_bar)
+        self.menu_save.setObjectName("menu_save")
+        self.setMenuBar(self.menu_bar)
 
-        self.actionLoad_18_files.triggered.connect(self.load_18_bin)
-        self.actionSave.triggered.connect(self.save_bin)
-        self.SectionList.currentItemChanged.connect(self.load_section)
+        self.menu_bar.addAction(self.menu_load.menuAction())
+        self.menu_bar.addAction(self.menu_save.menuAction())
+        self.menu_load.addAction(self.act_load_18)
+        self.menu_save.addAction(self.act_save)
+        self.menu_save.addAction(self.act_save_as)
+
+        self.re_translate_ui()
+
+        QMetaObject.connectSlotsByName(self)
+
+        self.act_load_18.triggered.connect(self.load_18_bin)
+        self.act_save.triggered.connect(self.save_bin)
+        self.section_list.currentItemChanged.connect(self.load_section)
 
         self.buffer: io.BytesIO | None = None
         self.filename: str = ""
@@ -98,13 +148,26 @@ class Editor(QMainWindow, Ui_Editor):
         self.idx_len: int = 0
         self.subsections: dict = {}
 
+    def re_translate_ui(self):
+        window_title = QCoreApplication.translate("Editor", "PES Gameplay Editor", None)
+        self.setWindowTitle(window_title)
+        load_18_text = QCoreApplication.translate("Editor", "Load 18 files", None)
+        self.act_load_18.setText(load_18_text)
+        save_text = QCoreApplication.translate("Editor", "Save", None)
+        self.act_save.setText(save_text)
+        save_as_text = QCoreApplication.translate("Editor", "Save As...", None)
+        self.act_save_as.setText(save_as_text)
+        menu_load_title = QCoreApplication.translate("Editor", "Load", None)
+        self.menu_load.setTitle(menu_load_title)
+        menu_save_title = QCoreApplication.translate("Editor", "Save", None)
+        self.menu_save.setTitle(menu_save_title)
+
     def get_filename(self):
-        f = QFileDialog.getOpenFileName(self, "CPK File")
-        self.filename = f[0].replace(" ", "")
+        self.filename = QFileDialog.getOpenFileName(self, "CPK File")[0]
 
     def load_bin(self):
-        self.SectionList.clear()
-        if self.filename != "":
+        self.section_list.clear()
+        if self.filename.replace(" ", "") != "":
             with open(self.filename, "rb") as f:
                 self.buffer = io.BytesIO(f.read())
                 sect_offs = []
@@ -129,7 +192,7 @@ class Editor(QMainWindow, Ui_Editor):
             for k, v in self.subsections.items():
                 item = SectionItem(offset=v["offset"], length=v["length"])
                 item.setText(k)
-                self.SectionList.addItem(item)
+                self.section_list.addItem(item)
 
     def load_18_bin(self):
         self.get_filename()
@@ -141,11 +204,11 @@ class Editor(QMainWindow, Ui_Editor):
             self.load_bin()
 
     def save_changed_value(self, sect: SectionItem):
-        val_count = self.ValueList.count()
+        val_count = self.value_list.count()
         if val_count != 1:
             self.buffer.seek(sect.offset)
             for i in range(val_count):
-                val = self.ValueList.itemWidget(self.ValueList.item(i))
+                val = self.value_list.itemWidget(self.value_list.item(i))
                 if "null" in val.name and val.value == 0:
                     data = conv_to_bytes(None)
                 else:
@@ -153,7 +216,7 @@ class Editor(QMainWindow, Ui_Editor):
                 self.buffer.write(data)
 
     def save_bin(self):
-        self.save_changed_value(self.SectionList.currentItem())
+        self.save_changed_value(self.section_list.currentItem())
         with open(self.filename, "wb") as f:
             self.buffer.seek(0)
             f.write(self.buffer.read())
@@ -161,14 +224,14 @@ class Editor(QMainWindow, Ui_Editor):
     def add_value_widget(self, name: str, value: float | int | bool, disabled=False):
         item = QListWidgetItem()
         widget = ValueWidget(name, value, disabled)
-        self.ValueList.insertItem(self.ValueList.count(), item)
-        self.ValueList.setItemWidget(item, widget)
+        self.value_list.insertItem(self.value_list.count(), item)
+        self.value_list.setItemWidget(item, widget)
         item.setSizeHint(widget.sizeHint())
 
     def load_section(self, curr: SectionItem, prev: SectionItem | None):
         if prev:
             self.save_changed_value(prev)
-        self.ValueList.clear()
+        self.value_list.clear()
         try:
             func = getattr(self.module, f"map_{curr.text()[:-2]}")
             vals = func(self.buffer, curr.offset, curr.length)
