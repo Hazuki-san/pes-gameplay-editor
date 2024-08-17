@@ -3,6 +3,15 @@ from struct import unpack
 
 from pes_ai.utils import conv_from_bytes
 
+one_byte_bools = [
+    "defenceFormationTest1",
+    "defenceFormationTest2",
+    "dfAdjustZ",
+    "dfCoverAdjustX",
+    "dfCoverEnable",
+    "dfForceAverageZ",
+]
+
 
 def map_basePosition(
     data: io.BytesIO, offset: int, length: int
@@ -11,6 +20,12 @@ def map_basePosition(
     data.seek(offset)
     for i in range(int(length / 4)):
         match i:
+            # defenceFormationTest1
+            # defenceFormationTest2
+            # dfAdjustZ
+            # dfCoverAdjustX
+            # dfCoverEnable
+            # dfForceAverageZ
             case 64 | 75:
                 vals += list(unpack("3?", data.read(3)))
                 data.seek(data.tell() + 1)

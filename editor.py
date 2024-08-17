@@ -209,13 +209,20 @@ class Editor(QMainWindow):
             self.buffer.seek(sect.offset)
             for i in range(val_count):
                 val = self.value_list.itemWidget(self.value_list.item(i))
-                if "null" in val.name and val.value == 0:
+                name = getattr(val, "name")
+                value = getattr(val, "value")
+                if "null" in name and value == 0:
                     data = conv_to_bytes(None)
                 else:
-                    data = conv_to_bytes(val.value)
+                    bool_list = getattr(self.module, "one_byte_bools")
+                    if isinstance(value, bool) and name not in bool_list:
+                        data = conv_to_bytes(int(value))
+                    else:
+                        data = conv_to_bytes(value)
                 self.buffer.write(data)
 
     def save_bin(self):
+        # noinspection PyTypeChecker
         self.save_changed_value(self.section_list.currentItem())
         with open(self.filename, "wb") as f:
             self.buffer.seek(0)
@@ -228,17 +235,18 @@ class Editor(QMainWindow):
         self.value_list.setItemWidget(item, widget)
         item.setSizeHint(widget.sizeHint())
 
-    def load_section(self, curr: SectionItem, prev: SectionItem | None):
+    def load_section(self, curr: SectionItem | None, prev: SectionItem | None):
         if prev:
             self.save_changed_value(prev)
         self.value_list.clear()
-        try:
-            func = getattr(self.module, f"map_{curr.text()[:-2]}")
-            vals = func(self.buffer, curr.offset, curr.length)
-            for k, v in vals.items():
-                self.add_value_widget(k, v)
-        except AttributeError:
-            self.add_value_widget(str(curr.length), curr.offset, True)
+        if curr:
+            try:
+                func = getattr(self.module, f"map_{curr.text()[:-2]}")
+                vals = func(self.buffer, curr.offset, curr.length)
+                for k, v in vals.items():
+                    self.add_value_widget(k, v)
+            except AttributeError:
+                self.add_value_widget(str(curr.length), curr.offset, True)
 
 
 if __name__ == "__main__":
