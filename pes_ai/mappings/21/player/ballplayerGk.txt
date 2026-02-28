@@ -1,0 +1,14 @@
+ClearInfo.enemyDist
+ClearInfo.forceKickTime
+LongPassInfo.forceEnemyDist
+LongPassInfo.forceKickTime
+LongPassInfo.limitLineFromPenaltyLine
+LongPassInfo.rangeFar
+LongPassInfo.rangeNear
+ShortPassInfo.courseCheckWidth
+ShortPassInfo.passAngleSubMax
+ShortPassInfo.passDistMax
+ShortPassInfo.rangeFar
+ShortPassInfo.rangeNear
+ShortPassInfo.targetFreeDist
+limitLineFromPenaltyLine
